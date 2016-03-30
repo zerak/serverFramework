@@ -1,8 +1,16 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
 
-func main(){
+	"serverFramework/core"
+)
+
+func main() {
 	fmt.Printf("Hello serverFramework.\n")
-}
 
+	sc := core.New()
+	sc.Init()
+
+	sc.
+}
