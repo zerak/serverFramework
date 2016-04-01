@@ -27,7 +27,7 @@ type ClientV1 struct {
 }
 
 func newClient(id int64, conn net.Conn, ctx *context) *ClientV1 {
-	fmt.Printf("new client ...\n")
+	fmt.Printf("ClientV1 new client ...\n")
 	var identifier string
 	if conn != nil {
 		identifier, _, _ = net.SplitHostPort(conn.RemoteAddr().String())
@@ -44,6 +44,6 @@ func newClient(id int64, conn net.Conn, ctx *context) *ClientV1 {
 		Reader: bufio.NewReaderSize(conn, defaultBufferSize),
 		Writer: bufio.NewWriterSize(conn, defaultBufferSize),
 	}
-	fmt.Printf("new client [%s]\n",conn.RemoteAddr())
+	fmt.Printf("ClientV1 new client id[%d] addr[%s]\n",c.ID,conn.RemoteAddr())
 	return c
 }

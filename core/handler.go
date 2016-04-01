@@ -33,7 +33,9 @@ func (sh *ServerHandler) Handle(clientConn net.Conn) {
 	switch protocolMagic {
 	case "json":
 		pro = &ProtocolJson{ctx: sh.ctx}
-	case "  v1":
+	case "  V1", "  v1":
+		pro = &ProtocolV1{ctx: sh.ctx}
+	case "  V2", "  v2":
 		pro = &ProtocolV1{ctx: sh.ctx}
 	default:
 		return
