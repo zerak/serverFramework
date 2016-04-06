@@ -2,14 +2,14 @@ package core
 
 import (
 	// "bytes"
+	// "encoding/binary"
 	"fmt"
 	"io"
 	"net"
 	"sync/atomic"
-	"encoding/binary"
 )
 
-/* 
+/*
 //the protocol v1 be made of [header cmd len data]
 // header: one byte
 // cmd: two byte,
@@ -30,93 +30,92 @@ type ProtocolV1 struct {
 
 func (p *ProtocolV1) IOLoop(conn net.Conn) error {
 	fmt.Printf("[ProtocolV1::Loop] loop ...\n")
-	var err error	
-	var header byte
-	var cmd uint32
-	var length int32
+	var err error
+	// var header byte
+	// var cmd uint32
+	// var length int32
 
 	clientId := atomic.AddInt64(&p.ctx.core.clientIDSequence, 1)
 	client := newClient(clientId, conn, p.ctx)
 
-	tt := make([]byte,1024)
+	buf := make([]byte, 8)
+	len := 0
+
 	for {
-		_,err = io.ReadFull(conn,tt)
-		if err != nil {
-			return err
-		}
-		fmt.Printf("ProtocolV1 tt[%v]\n",tt)
+		for {
+			// var n int
+			n, err := client.Reader.Read(buf[len:])
+			// n, err := client.Read(buf[len:])
+			fmt.Printf("len[%d] n[%d] err[%v]\n",len, n, err)
+			if err != nil {
+				if err != io.EOF {
+					// HANDLE CLIENT READ ERR
+					fmt.Printf("ProtocolV1 read err-%v\n", err)
+				} else {
+					err = nil
+					len = 0
+				}
 
-		// header
-		err = binary.Read(conn, binary.BigEndian,&header)
-		if err != nil {
-			return err
-		}
-		// if header != 0x05 {
-		// 	return fmt.Errorf("ProtocolV1 header[%s] err\n",header)
-		// }
-		fmt.Printf("ProtocolV1 header[%v]\n",header)
+				fmt.Printf("ProtocolV1 recv buf[%v]\n", buf)
+				break
+			}
 
-		// cmd
-		err = binary.Read(conn,binary.BigEndian,cmd)
-		if err != nil {
-			return err
-		}
-		fmt.Printf("ProtocolV1 cmd[%v]\n",cmd)
+			if n > 0 {
+				len += n
+			}
 
-		// data
-		err = binary.Read(conn, binary.BigEndian, &length)
-		if err != nil {
-			return err
+			if n == 0 {
+				break
+			}
 		}
-		data := make([]byte,length)
-		_,err = io.ReadFull(conn,data)
-		if err != nil {
-			return err
-		}
-		fmt.Printf("ProtocolV1 len[%d] data[%v]\n",length,data)
 
-
-		// // message binary data
-		// buf := make([]byte, len)
-		// _, err = io.ReadFull(r, buf)
+		// // header
+		// err = binary.Read(conn, binary.BigEndian, &header)
 		// if err != nil {
-		// 	return nil, err
-		// }
-
-		// var line []byte
-		// line, err = client.Reader.ReadSlice('\n')
-		// if err != nil {
-		// 	if err == io.EOF {
-		// 		err = nil
-		// 	} else {
-		// 		err = fmt.Errorf("failed to read - %s\n", err)
-		// 	}
 		// 	break
-		// } else if err == nil{
-		// 	fmt.Printf("line-%v\n",line)
+		// }
+		// if header != 0x05 {
+		// 	err = fmt.Errorf("ProtocolV1 header[%s] err\n", header)
+		// 	break
+		// }
+		// fmt.Printf("ProtocolV1 header[%v]\n", header)
+
+		// // cmd
+		// err = binary.Read(client.Reader, binary.BigEndian, &cmd)
+		// if err != nil {
+		// 	fmt.Printf("cmd\n")
+		// 	break
+		// }
+		// fmt.Printf("ProtocolV1 cmd[%v]\n", cmd)
+
+		// // data
+		// err = binary.Read(client.Reader, binary.BigEndian, &length)
+		// if err != nil {
+		// 	fmt.Printf("len\n")
+		// 	break
+		// }
+		// data := make([]byte, length)
+		// _, err = io.ReadFull(client.Reader, data)
+		// if err != nil {
+		// 	fmt.Printf("data\n")
+		// 	break
+		// }
+		// fmt.Printf("ProtocolV1 len[%d] data[%v]\n", length, data)
+
+		// err = p.Send(client, []byte("string send to client"))
+		// if err != nil {
+		// 	err = fmt.Errorf("failed to send response - %s", err)
+		// 	break
 		// }
 
-		// // trim the '\n'
-		// line = line[:len(line)-1]
-		// // optionally trim the '\r'
-		// if len(line) > 0 && line[len(line)-1] == '\r' {
-		// 	line = line[:len(line)-1]
-		// }
-		// params := bytes.Split(line, []byte(" "))
-		// fmt.Printf("[ProtocolV1::Loop] line[%v] params[%v]\n", line, params)
+	} // END CLIENT LOOP
 
-		err = p.Send(client, []byte("string send to client"))
-		if err != nil {
-			err = fmt.Errorf("failed to send response - %s", err)
-			break
-		}
+	fmt.Printf("[ProtocolV1::Loop] loop exit err - %v\n", err)
 
-	}
-
-	conn.Close()
-
-	fmt.Printf("[ProtocolV1::Loop] loop exit err - %v\n",err)
-
+	defer conn.Close()
+	defer func() {
+		fmt.Printf("[ProtocolV1::Loop] defer func ...\n")
+	}()
 	return err
 }
 

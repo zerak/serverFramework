@@ -46,4 +46,5 @@ func (sh *ServerHandler) Handle(clientConn net.Conn) {
 		fmt.Printf("[ServerHandler::Handle] ERROR: client[%s] - [%s]\n", clientConn.RemoteAddr(), err)
 		return
 	}
+	fmt.Printf("[ServerHandler::Handle] client exit[%v] - [%v]\n", clientConn.RemoteAddr(), err)
 }
