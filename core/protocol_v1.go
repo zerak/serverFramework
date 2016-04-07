@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/binary"
-	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -18,8 +17,8 @@ const (
 /*
 //the protocol v1 be made of [header cmd len data]
 // header: one byte
-// cmd: two byte,
-// len: two byte,length of the data
+// cmd: four byte,
+// len: four byte,length of the data
 // data: the contents
 
 //   	[x]	   [x][x]      [x][x]  [x][x][x][x]...
@@ -59,6 +58,8 @@ func (p *ProtocolV1) IOLoop(conn net.Conn) error {
 			break
 		}
 
+		fmt.Printf("ProtocolV1 recv buf [%v]\n", buf)
+
 		// header
 		header = buf[0]
 		if header != 0x05 {
@@ -69,15 +70,17 @@ func (p *ProtocolV1) IOLoop(conn net.Conn) error {
 		// cmd
 		cmd_buf := bytes.NewBuffer(buf[1:5])
 		binary.Read(cmd_buf, binary.BigEndian, &cmd)
+		fmt.Printf("ProtocolV1 cmd [%v]\n", cmd)
 
 		// length
 		len_buf := bytes.NewBuffer(buf[5:9])
 		binary.Read(len_buf, binary.BigEndian, &length)
+		fmt.Printf("ProtocolV1 length [%v]\n", length)
 
 		// 1 check the total buff size in the io reader
 		// 2 read buf and move read buf pointer
 	checkData:
-		_, err = client.Reader.Peek(ProtocolHeaderLen + length)
+		_, err = client.Reader.Peek((int)(ProtocolHeaderLen + length))
 		if err != nil {
 			if err == bufio.ErrBufferFull {
 				// data not enough
