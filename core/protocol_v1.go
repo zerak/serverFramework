@@ -6,6 +6,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"io"
 	"net"
 	"sync/atomic"
 )
@@ -50,14 +51,13 @@ func (p *ProtocolV1) IOLoop(conn net.Conn) error {
 		buf, err = client.Reader.Peek(ProtocolHeaderLen)
 		if err != nil {
 			if err == bufio.ErrBufferFull {
-				// no data in the buff continue wait
+				// no enough data in the buff continue wait
 				fmt.Printf("ProtocolV1 read err-%v\n", err)
 				continue
 			}
-			fmt.Printf("ProtocolV1 recv buf[%v]\n", buf)
+			fmt.Printf("ProtocolV1 recv head err [%v]\n", buf)
 			break
 		}
-
 
 		// header
 		header = buf[0]
@@ -70,15 +70,38 @@ func (p *ProtocolV1) IOLoop(conn net.Conn) error {
 		cmd_buf := bytes.NewBuffer(buf[1:5])
 		binary.Read(cmd_buf, binary.BigEndian, &cmd)
 
-		// data
+		// length
 		len_buf := bytes.NewBuffer(buf[5:9])
 		binary.Read(len_buf, binary.BigEndian, &length)
+
+		// 1 check the total buff size in the io reader
+		// 2 read buf and move read buf pointer
+	checkData:
+		_, err = client.Reader.Peek(ProtocolHeaderLen + length)
+		if err != nil {
+			if err == bufio.ErrBufferFull {
+				// data not enough
+				fmt.Printf("ProtocolV1 read err-%v\n", err)
+				goto checkData
+			}
+			fmt.Printf("ProtocolV1 read data err - %v\n", err)
+			break
+		}
+
+		// data
 		data := make([]byte, ProtocolHeaderLen+length)
-		n, err := client.Reader.Read(data)
-		if err == nil {
-			if (int32)(n) < (length + ProtocolHeaderLen) {
-				fmt.Printf("ProtocolV1 recv[%d] err\n", n, length, data)
-				panic(errors.New("recv bytes not enough"))
+		pos := 0
+		for {
+			n, err := client.Reader.Read(data[pos:])
+			if err != nil {
+				if err == io.EOF {
+					fmt.Printf("ProtocolV1 read contents ok\n")
+					break
+				}
+			}
+
+			if n > 0 {
+				pos += n
 			}
 		}
 
@@ -96,10 +119,10 @@ func (p *ProtocolV1) IOLoop(conn net.Conn) error {
 
 	fmt.Printf("[ProtocolV1::Loop] loop exit err - %v\n", err)
 
-	defer conn.Close()
 	defer func() {
-		fmt.Printf("[ProtocolV1::Loop] defer func ...\n")
+		fmt.Printf("[ProtocolV1::Loop] exit client[%v] loop ...\n", client.RemoteAddr())
 	}()
+	defer conn.Close()
 	return err
 }
 
