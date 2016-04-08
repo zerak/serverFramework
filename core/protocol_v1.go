@@ -1,13 +1,12 @@
 package core
 
 import (
-	"bufio"
-	"bytes"
 	"encoding/binary"
 	"fmt"
 	"io"
 	"net"
 	"sync/atomic"
+	"time"
 )
 
 const (
@@ -34,83 +33,56 @@ type ProtocolV1 struct {
 }
 
 func (p *ProtocolV1) IOLoop(conn net.Conn) error {
-	fmt.Printf("[ProtocolV1::Loop] loop ...\n")
 	var err error
 	var header byte
-	var cmd uint32
-	var length int32
-
+	//var cmd uint32
+	var length uint32
 	clientId := atomic.AddInt64(&p.ctx.core.clientIDSequence, 1)
 	client := newClient(clientId, conn, p.ctx)
 
-	buf := make([]byte, ProtocolHeaderLen)
+	// synchronize the startup of messagePump in order
+	// to guarantee that it gets a chance to initialize
+	// goroutine local state derived from client attributes
+	// and avoid a potential race with IDENTIFY (where a client
+	// could have changed or disabled said attributes)
+	msgPumpStartedChan := make(chan bool)
+	go p.messagePump(client, msgPumpStartedChan)
+	<-msgPumpStartedChan
 
+	buf := make([]byte, ProtocolHeaderLen)
 	for {
-		buf[0] = 0
-		buf, err = client.Reader.Peek(ProtocolHeaderLen)
+		_, err = io.ReadFull(client.Reader, buf)
 		if err != nil {
-			if err == bufio.ErrBufferFull {
-				// no enough data in the buff continue wait
-				fmt.Printf("ProtocolV1 read err-%v\n", err)
-				continue
-			}
-			fmt.Printf("ProtocolV1 recv head err [%v]\n", buf)
+			fmt.Printf("ProtocolV1 read head from client %v err-%v buffed-%v\n", client.Conn.RemoteAddr(), err, client.Reader.Buffered())
 			break
 		}
 
-		fmt.Printf("ProtocolV1 recv buf [%v]\n", buf)
+		//fmt.Printf("ProtocolV1 recv buf [%v]\n", buf)
 
 		// header
 		header = buf[0]
 		if header != 0x05 {
 			err = fmt.Errorf("ProtocolV1 header[%s] err\n", header)
-			continue
-		}
-
-		// cmd
-		cmd_buf := bytes.NewBuffer(buf[1:5])
-		binary.Read(cmd_buf, binary.BigEndian, &cmd)
-		fmt.Printf("ProtocolV1 cmd [%v]\n", cmd)
-
-		// length
-		len_buf := bytes.NewBuffer(buf[5:9])
-		binary.Read(len_buf, binary.BigEndian, &length)
-		fmt.Printf("ProtocolV1 length [%v]\n", length)
-
-		// 1 check the total buff size in the io reader
-		// 2 read buf and move read buf pointer
-	checkData:
-		_, err = client.Reader.Peek((int)(ProtocolHeaderLen + length))
-		if err != nil {
-			if err == bufio.ErrBufferFull {
-				// data not enough
-				fmt.Printf("ProtocolV1 read err-%v\n", err)
-				goto checkData
-			}
-			fmt.Printf("ProtocolV1 read data err - %v\n", err)
 			break
 		}
 
-		// data
-		data := make([]byte, ProtocolHeaderLen+length)
-		pos := 0
-		for {
-			n, err := client.Reader.Read(data[pos:])
-			if err != nil {
-				if err == io.EOF {
-					fmt.Printf("ProtocolV1 read contents ok\n")
-					break
-				}
-			}
+		// cmd
+		//cmd = binary.BigEndian.Uint32(buf[1:5])
+		//fmt.Printf("ProtocolV1 cmd [%v]\n", cmd)
 
-			if n > 0 {
-				pos += n
-			}
+		// length
+		length = binary.BigEndian.Uint32(buf[5:9])
+		//fmt.Printf("ProtocolV1 length [%v]\n", length)
+
+		// data
+		data := make([]byte, length)
+		_, err = io.ReadFull(client.Reader, data)
+		if err != nil {
+			fmt.Printf("ProtocolV1 read data from client %v err-%v buffed-%v\n", client.Conn.RemoteAddr(), err, client.Reader.Buffered())
+			break
 		}
 
-		data = data[ProtocolHeaderLen:]
-
-		fmt.Printf("ProtocolV1 header[%v] cmd[%v] len[%d] data[%v]\n", header, cmd, length, data)
+		//fmt.Printf("ProtocolV1 header[%v] cmd[%v] len[%d] data[%v]\n", header, cmd, length, data)
 
 		err = p.Send(client, []byte("string send to client"))
 		if err != nil {
@@ -120,13 +92,37 @@ func (p *ProtocolV1) IOLoop(conn net.Conn) error {
 
 	} // END CLIENT LOOP
 
-	fmt.Printf("[ProtocolV1::Loop] loop exit err - %v\n", err)
-
 	defer func() {
-		fmt.Printf("[ProtocolV1::Loop] exit client[%v] loop ...\n", client.RemoteAddr())
+		defer conn.Close()
+		fmt.Printf("ProtocolV1 client[%v] exit loop err-%v\n", client.RemoteAddr(), err)
 	}()
-	defer conn.Close()
 	return err
+}
+
+func (p *ProtocolV1) messagePump(client *ClientV1, startedChan chan bool) {
+	var err error
+
+	hbTicker := time.NewTicker(client.HeartbeatInterval)
+	hbChan := hbTicker.C
+
+	//msgTimeOut := client.MsgTimeout
+
+	// signal to the goroutine that started the messagePump
+	// that we've started up
+	close(startedChan)
+
+	for {
+		select {
+		case <-hbChan:
+			err = p.Send(client, []byte("heartBeat"))
+			if err != nil {
+				goto exit
+			}
+		}
+	}
+
+exit:
+	hbTicker.Stop()
 }
 
 func (p *ProtocolV1) Send(client *ClientV1, data []byte) error {
@@ -157,14 +153,49 @@ func (p *ProtocolV1) Send(client *ClientV1, data []byte) error {
 	return err
 }
 
-func (p *ProtocolV1) readInt(r *bufio.Reader) (int, error) {
-	//b, err := r.ReadBytes(delimEnd)
-	//if err != nil {
-	//	return Resp{}, err
-	//}
-	//i, err := strconv.ParseInt(string(b[1:len(b)-2]), 10, 64)
-	//if err != nil {
-	//	return Resp{}, errParse
-	//}
-	return 1, nil
+func parsePack(client *ClientV1) (dd []byte, err error) {
+	return nil, err
+	var header byte
+	var cmd uint32
+	var length uint32
+	buf := make([]byte, ProtocolHeaderLen)
+	_, err = io.ReadFull(client.Reader, buf)
+	if err != nil {
+		if err == io.EOF {
+			fmt.Printf("ProtocolV1 read from client %v may be closed\n", client.Conn.RemoteAddr())
+		}
+		fmt.Printf("ProtocolV1 read from client %v err-%v buffed-%v\n", client.Conn.RemoteAddr(), err, client.Reader.Buffered())
+		return nil, err
+	}
+
+	fmt.Printf("ProtocolV1 recv buf [%v]\n", buf)
+
+	// header
+	header = buf[0]
+	if header != 0x05 {
+		err = fmt.Errorf("ProtocolV1 header[%s] err\n", header)
+		return nil, err
+	}
+
+	// cmd
+	cmd = binary.BigEndian.Uint32(buf[1:5])
+	fmt.Printf("ProtocolV1 cmd [%v]\n", cmd)
+
+	// length
+	length = binary.BigEndian.Uint32(buf[5:9])
+	fmt.Printf("ProtocolV1 length [%v]\n", length)
+
+	// data
+	data := make([]byte, length)
+	_, err = io.ReadFull(client.Reader, data)
+	if err != nil {
+		if err == io.EOF {
+			fmt.Printf("ProtocolV1 read err-%v client-%v may be closed\n", err, client.Conn.RemoteAddr())
+		}
+		fmt.Printf("ProtocolV1 read err-%v buffed-%v\n", err, client.Reader.Buffered())
+		return nil, err
+	}
+
+	fmt.Printf("ProtocolV1 header[%v] cmd[%v] len[%d] data[%v]\n", header, cmd, length, data)
+	return nil, err
 }
