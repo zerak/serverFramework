@@ -17,6 +17,9 @@ type ServerCore struct {
 	startTime   time.Time
 	tcpListener net.Listener
 	wg          util.WaitGroupWrapper
+
+	db chan *DBModuler
+
 }
 
 func (sc *ServerCore) Run() {
