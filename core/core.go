@@ -8,6 +8,8 @@ import (
 	"time"
 
 	"serverFramework/internal/util"
+	"serverFramework/internal/moduledb"
+	"serverFramework/internal/modulelogic"
 )
 
 type ServerCore struct {
@@ -18,8 +20,8 @@ type ServerCore struct {
 	tcpListener net.Listener
 	wg          util.WaitGroupWrapper
 
-	db chan *DBModuler
-
+	db    chan *moduledb.DBModuler
+	logic chan *modulelogic.LogicModuler
 }
 
 func (sc *ServerCore) Run() {

@@ -6,20 +6,20 @@ import (
 )
 
 type Message struct {
-	ID int
-	Body []byte
+	ID        int
+	Body      []byte
 	Timestamp int64
-	Attempts uint16
+	Attempts  uint16
 
-	Conn *net.Conn
+	net.Conn
 }
 
-func NewMessage(id int, body []byte, client *ClientV1) *Message  {
+func NewMessage(id int, body []byte, client *ClientV1) *Message {
 	return &Message{
-		ID: id,
-		Body:body,
-		Timestamp:time.Now().UnixNano(),
+		ID:        id,
+		Body:      body,
+		Timestamp: time.Now().UnixNano(),
 
-		Conn:client.Conn,
+		Conn: client.Conn,
 	}
 }
