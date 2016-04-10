@@ -7,9 +7,9 @@ import (
 	"sync"
 	"time"
 
-	"serverFramework/internal/util"
 	"serverFramework/internal/moduledb"
 	"serverFramework/internal/modulelogic"
+	"serverFramework/internal/util"
 )
 
 type ServerCore struct {

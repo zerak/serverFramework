@@ -1,6 +1,4 @@
 package moduledb
 
-type DBModuler interface  {
-
-
+type DBModuler interface {
 }

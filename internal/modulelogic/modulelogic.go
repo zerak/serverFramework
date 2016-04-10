@@ -1,6 +1,4 @@
 package modulelogic
 
-type LogicModuler interface  {
-
-
+type LogicModuler interface {
 }
