@@ -7,6 +7,8 @@ import (
 	"net"
 	"sync/atomic"
 	"time"
+
+	"serverFramework/internal/protocol"
 )
 
 const (
@@ -20,9 +22,9 @@ const (
 // len: four byte,length of the data
 // data: the contents
 
-//   	[x]	   [x][x]      [x][x]  [x][x][x][x]...
-//   | byte | (uint32) |  (uint32)  |   (binary)
-//   |1-byte|  4-byte  |   4-byte   |	 N-byte
+//   	 [x]    [x][x][x][x]  [x][x][x][x]  [x][x][x][x]...
+//   |  byte  |  (uint32)  |   (uint32)  	 |   (binary)
+//   | 1-byte |   4-byte   |    4-byte   	 |	 N-byte
 //   --------------------------------------------...
 //    header    cmd	      length         data
 //	 [  0   1234  5678  ...]
@@ -118,6 +120,8 @@ func (p *ProtocolV1) messagePump(client *ClientV1, startedChan chan bool) {
 			if err != nil {
 				goto exit
 			}
+		case client.ExitChan:
+			goto exit
 		}
 	}
 
@@ -136,7 +140,7 @@ func (p *ProtocolV1) Send(client *ClientV1, data []byte) error {
 	// }
 
 	// _, err := SendFramedResponse(client.Writer, frameType, data)
-	_, err := SendResponse(client.Writer, data)
+	_, err := protocol.SendResponse(client.Writer, data)
 	if err != nil {
 		client.writeLock.Unlock()
 		return err

@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"io"
 	"net"
+
+	"serverFramework/internal/protocol"
 )
 
 type Handler interface {
@@ -29,7 +31,7 @@ func (sh *ServerHandler) Handle(clientConn net.Conn) {
 	protocolMagic := string(buf)
 	fmt.Printf("[ServerHandler::Handle] recv[%s]\n", protocolMagic)
 
-	var pro Protocol
+	var pro protocol.Protocol
 	switch protocolMagic {
 	case "json":
 		pro = &ProtocolJson{ctx: sh.ctx}

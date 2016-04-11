@@ -7,10 +7,11 @@ import (
 	"log"
 	"net/http"
 	"serverFramework/core"
+	"serverFramework/internal/version"
 )
 
 func main() {
-	fmt.Printf("Hello serverFramework.\n")
+	fmt.Println(version.String("Chat Server"))
 
 	sc := core.New()
 	sc.Run()
