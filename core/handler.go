@@ -1,7 +1,6 @@
 package core
 
 import (
-	"fmt"
 	"io"
 	"net"
 
@@ -17,7 +16,7 @@ type ServerHandler struct {
 }
 
 func (sh *ServerHandler) Handle(clientConn net.Conn) {
-	fmt.Printf("[ServerHandler::Handle] client[%s]\n", clientConn.RemoteAddr())
+	sh.ctx.core.log.Info("[ServerHandler::Handle] client[%s]\n", clientConn.RemoteAddr())
 
 	// The client should initialize itself by sending a 4 byte sequence indicating
 	// the version of the protocol that it intends to communicate, this will allow us
@@ -25,11 +24,11 @@ func (sh *ServerHandler) Handle(clientConn net.Conn) {
 	buf := make([]byte, 4)
 	_, err := io.ReadFull(clientConn, buf)
 	if err != nil {
-		fmt.Printf("[ServerHandler::Handle] ERROR: failed to read protocol version [%s]\n", err)
+		sh.ctx.core.log.Error("[ServerHandler::Handle] ERROR: failed to read protocol version [%s]\n", err)
 		return
 	}
 	protocolMagic := string(buf)
-	fmt.Printf("[ServerHandler::Handle] recv[%s]\n", protocolMagic)
+	sh.ctx.core.log.Info("[ServerHandler::Handle] recv[%s]\n", protocolMagic)
 
 	var pro protocol.Protocol
 	switch protocolMagic {
@@ -45,8 +44,8 @@ func (sh *ServerHandler) Handle(clientConn net.Conn) {
 
 	err = pro.IOLoop(clientConn)
 	if err != nil {
-		fmt.Printf("[ServerHandler::Handle] ERROR: client[%s] - [%s]\n", clientConn.RemoteAddr(), err)
+		sh.ctx.core.log.Info("[ServerHandler::Handle] ERROR: client[%s] - [%s]\n", clientConn.RemoteAddr(), err)
 		return
 	}
-	fmt.Printf("[ServerHandler::Handle] client exit[%v] - [%v]\n", clientConn.RemoteAddr(), err)
+	sh.ctx.core.log.Info("[ServerHandler::Handle] client exit[%v] - [%v]\n", clientConn.RemoteAddr(), err)
 }

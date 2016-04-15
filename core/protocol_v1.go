@@ -55,7 +55,7 @@ func (p *ProtocolV1) IOLoop(conn net.Conn) error {
 	for {
 		_, err = io.ReadFull(client.Reader, buf)
 		if err != nil {
-			fmt.Printf("ProtocolV1 read head from client %v err-%v buffed-%v\n", client.Conn.RemoteAddr(), err, client.Reader.Buffered())
+			p.ctx.core.log.Error("ProtocolV1 read head from client %v err-%v buffed-%v\n", client.Conn.RemoteAddr(), err, client.Reader.Buffered())
 			break
 		}
 
@@ -96,6 +96,7 @@ func (p *ProtocolV1) IOLoop(conn net.Conn) error {
 
 	defer func() {
 		defer conn.Close()
+		client.ExitChan <- 1
 		fmt.Printf("ProtocolV1 client[%v] exit loop err-%v\n", client.RemoteAddr(), err)
 	}()
 	return err
@@ -120,7 +121,7 @@ func (p *ProtocolV1) messagePump(client *ClientV1, startedChan chan bool) {
 			if err != nil {
 				goto exit
 			}
-		case client.ExitChan:
+		case <-client.ExitChan:
 			goto exit
 		}
 	}

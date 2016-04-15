@@ -1,11 +1,13 @@
 package core
 
 import (
-	"fmt"
 	"net"
 	"os"
 	"sync"
 	"time"
+	//"path/filepath"
+
+	"github.com/astaxie/beego/logs"
 
 	"serverFramework/internal/moduledb"
 	"serverFramework/internal/modulelogic"
@@ -22,14 +24,27 @@ type ServerCore struct {
 
 	db    chan *moduledb.DBModuler
 	logic chan *modulelogic.LogicModuler
+	log 	*logs.BeeLogger
 }
 
 func (sc *ServerCore) Run() {
-	fmt.Printf("[core] Run ...\n")
+	defer sc.log.Flush()
+
+	sc.log.EnableFuncCallDepth(true)
+	//sc.log.SetLogFuncCallDepth(3)
+
+	sc.log.SetLogger("console", "")
+	sc.log.SetLogger("file",`{"filename":"blog.log","level":7,"maxlines":0,"maxsize":0,"daily":true,"maxdays":10}`)
+
+	//AppPath, _ := filepath.Abs(filepath.Dir(os.Args[0]))
+	//os.Chdir(AppPath)
+	//appConfigPath := filepath.Join(AppPath, "conf", "seelog.xml")
+
+	sc.log.Info("Run ...")
 
 	tcpListener, err := net.Listen("tcp", "127.0.0.1:8888")
 	if err != nil {
-		fmt.Printf("[ServerCore:Run]FATAL: listen (%s) failed - %s\n", "localhost", err)
+		sc.log.Error("[ServerCore:Run]FATAL: listen (%s) failed - %s", "localhost", err)
 		os.Exit(0)
 	}
 
@@ -37,7 +52,7 @@ func (sc *ServerCore) Run() {
 	sc.tcpListener = tcpListener
 	sc.Unlock()
 
-	fmt.Printf("[ServerCore:Run] server listen on 8888\n")
+	sc.log.Info("[ServerCore:Run] server listen on 8888")
 
 	ctx := &context{sc}
 
@@ -47,14 +62,16 @@ func (sc *ServerCore) Run() {
 		HandleAccept(sc.tcpListener, handle)
 	})
 
-	fmt.Printf("[core] Run\n")
+	sc.log.Info("[core] Run")
 
 	sc.wg.Wait()
 }
 
 func New() *ServerCore {
 	sc := &ServerCore{
-		startTime: time.Now()}
+		startTime: time.Now(),
+		log:logs.NewLogger(100),
+	}
 
 	return sc
 }
