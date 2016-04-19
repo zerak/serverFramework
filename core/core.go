@@ -24,7 +24,7 @@ type ServerCore struct {
 
 	db    chan *moduledb.DBModuler
 	logic chan *modulelogic.LogicModuler
-	log 	*logs.BeeLogger
+	log   *logs.BeeLogger
 }
 
 func (sc *ServerCore) Run() {
@@ -34,7 +34,7 @@ func (sc *ServerCore) Run() {
 	//sc.log.SetLogFuncCallDepth(3)
 
 	sc.log.SetLogger("console", "")
-	sc.log.SetLogger("file",`{"filename":"blog.log","level":7,"maxlines":0,"maxsize":0,"daily":true,"maxdays":10}`)
+	sc.log.SetLogger("file", `{"filename":"blog.log","level":7,"maxlines":0,"maxsize":0,"daily":true,"maxdays":10}`)
 
 	//AppPath, _ := filepath.Abs(filepath.Dir(os.Args[0]))
 	//os.Chdir(AppPath)
@@ -70,7 +70,7 @@ func (sc *ServerCore) Run() {
 func New() *ServerCore {
 	sc := &ServerCore{
 		startTime: time.Now(),
-		log:logs.NewLogger(100),
+		log:       logs.NewLogger(100),
 	}
 
 	return sc
