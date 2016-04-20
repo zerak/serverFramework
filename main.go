@@ -9,8 +9,10 @@ import (
 )
 
 func main() {
-	sc := core.New()
-	sc.Run()
+	core.Run()
+	//core.Run("127.0.0.1:8089")
+	//core.Run("localhost")
+	// core.Run(":8089")
 
 	go func() {
 		log.Println(http.ListenAndServe("localhost:6060", nil))

@@ -2,7 +2,6 @@ package core
 
 import (
 	"bufio"
-	"fmt"
 	"net"
 	"sync"
 	"time"
@@ -42,7 +41,7 @@ func (c *ClientV1) Close() {
 }
 
 func newClient(id int64, conn net.Conn, ctx *context) *ClientV1 {
-	fmt.Printf("ClientV1 new client ...\n")
+	Info("new client ...")
 	var identifier string
 	if conn != nil {
 		identifier, _, _ = net.SplitHostPort(conn.RemoteAddr().String())
@@ -65,6 +64,6 @@ func newClient(id int64, conn net.Conn, ctx *context) *ClientV1 {
 
 		ExitChan: make(chan int),
 	}
-	fmt.Printf("ClientV1 new client id[%d] addr[%s] identifier[%v]\n", c.ID, conn.RemoteAddr(), c.ClientID)
+	BeeLogger.Info("new client id[%d] addr[%s] identifier[%s]", c.ID, conn.RemoteAddr(), c.ClientID)
 	return c
 }

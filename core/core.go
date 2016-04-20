@@ -1,77 +1,46 @@
 package core
 
 import (
-	"net"
-	"os"
-	"sync"
-	"time"
-	//"path/filepath"
-
-	"github.com/astaxie/beego/logs"
-
-	"serverFramework/internal/moduledb"
-	"serverFramework/internal/modulelogic"
-	"serverFramework/internal/util"
+	"strconv"
+	"strings"
 )
 
-type ServerCore struct {
-	// 64bit atomic vars need to be first for proper alignment on 32bit platforms
-	clientIDSequence int64
-	sync.RWMutex
-	startTime   time.Time
-	tcpListener net.Listener
-	wg          util.WaitGroupWrapper
+const (
+	// VERSION represent beego web framework version.
+	VERSION = "1.6.1"
 
-	db    chan *moduledb.DBModuler
-	logic chan *modulelogic.LogicModuler
-	log   *logs.BeeLogger
+	// DEV is for develop
+	DEV = "dev"
+	// PROD is for production
+	PROD = "prod"
+)
+
+func initBeforeRun() {
 }
 
-func (sc *ServerCore) Run() {
-	defer sc.log.Flush()
+// Run application.
+// core.Run() default run on ListenPort
+// core.Run("localhost")
+// core.Run(":8089")
+// core.Run("127.0.0.1:8089")
+func Run(params ...string) {
+	Info("server run ...")
 
-	sc.log.EnableFuncCallDepth(true)
-	//sc.log.SetLogFuncCallDepth(3)
+	initBeforeRun()
 
-	sc.log.SetLogger("console", "")
-	sc.log.SetLogger("file", `{"filename":"blog.log","level":7,"maxlines":0,"maxsize":0,"daily":true,"maxdays":10}`)
-
-	//AppPath, _ := filepath.Abs(filepath.Dir(os.Args[0]))
-	//os.Chdir(AppPath)
-	//appConfigPath := filepath.Join(AppPath, "conf", "seelog.xml")
-
-	sc.log.Info("Run ...")
-
-	tcpListener, err := net.Listen("tcp", "127.0.0.1:8888")
-	if err != nil {
-		sc.log.Error("[ServerCore:Run]FATAL: listen (%s) failed - %s", "localhost", err)
-		os.Exit(0)
+	if len(params) > 0 && params[0] != "" {
+		strs := strings.Split(params[0], ":")
+		if len(strs) > 0 && strs[0] != "" {
+			addr := strs[0]
+			BeeLogger.Info("listen on addr [%v]", addr)
+		}
+		if len(strs) > 1 && strs[1] != "" {
+			port, _ := strconv.Atoi(strs[1])
+			BeeLogger.Info("listen on port [%v]", port)
+		}
 	}
 
-	sc.Lock()
-	sc.tcpListener = tcpListener
-	sc.Unlock()
+	Server.Run()
 
-	sc.log.Info("[ServerCore:Run] server listen on 8888")
-
-	ctx := &context{sc}
-
-	handle := &ServerHandler{ctx: ctx}
-	// start accept routine
-	sc.wg.Wrap(func() {
-		HandleAccept(sc.tcpListener, handle)
-	})
-
-	sc.log.Info("[core] Run")
-
-	sc.wg.Wait()
-}
-
-func New() *ServerCore {
-	sc := &ServerCore{
-		startTime: time.Now(),
-		log:       logs.NewLogger(100),
-	}
-
-	return sc
+	Info("server exit")
 }
