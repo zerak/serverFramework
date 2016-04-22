@@ -8,28 +8,29 @@ import (
 
 	"serverFramework/internal/moduledb"
 	"serverFramework/internal/modulelogic"
-	"serverFramework/internal/util"
+	"serverFramework/internal/utils"
 )
 
 var (
-	// BeeApp is an application instance
-	Server *ServerCore
+	// ServerApp is an application instance
+	ServerApp *ServerCore
 )
 
 type ServerCore struct {
 	sync.RWMutex
+
 	// 64bit atomic vars need to be first for proper alignment on 32bit platforms
 	clientIDSequence int64
 	startTime        time.Time
 	tcpListener      net.Listener
-	wg               util.WaitGroupWrapper
+	wg               utils.WaitGroupWrapper
 
 	db    chan *moduledb.DBModuler
 	logic chan *modulelogic.LogicModuler
 }
 
 func init() {
-	Server = New()
+	ServerApp = New()
 }
 
 func New() *ServerCore {
@@ -43,7 +44,7 @@ func New() *ServerCore {
 func (sc *ServerCore) Run() {
 	tcpListener, err := net.Listen("tcp", "127.0.0.1:8888")
 	if err != nil {
-		BeeLogger.Error("listen [%s] failed ->%s", "localhost", err)
+		ServerLogger.Error("listen [%s] failed ->%s", "localhost", err)
 		os.Exit(0)
 	}
 

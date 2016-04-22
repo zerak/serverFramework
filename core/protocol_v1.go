@@ -55,7 +55,7 @@ func (p *ProtocolV1) IOLoop(conn net.Conn) error {
 	for {
 		_, err = io.ReadFull(client.Reader, buf)
 		if err != nil {
-			BeeLogger.Error("ProtocolV1 read head from client[%v] err->%v buffed->%v", client.Conn.RemoteAddr(), err, client.Reader.Buffered())
+			ServerLogger.Error("ProtocolV1 read head from client[%v] err->%v buffed->%v", client.Conn.RemoteAddr(), err, client.Reader.Buffered())
 			break
 		}
 
@@ -80,7 +80,7 @@ func (p *ProtocolV1) IOLoop(conn net.Conn) error {
 		data := make([]byte, length)
 		_, err = io.ReadFull(client.Reader, data)
 		if err != nil {
-			BeeLogger.Error("ProtocolV1 read data from client[%v] err->%v buffed->%v", client.Conn.RemoteAddr(), err, client.Reader.Buffered())
+			ServerLogger.Error("ProtocolV1 read data from client[%v] err->%v buffed->%v", client.Conn.RemoteAddr(), err, client.Reader.Buffered())
 			break
 		}
 
@@ -97,7 +97,7 @@ func (p *ProtocolV1) IOLoop(conn net.Conn) error {
 	defer func() {
 		defer conn.Close()
 		client.ExitChan <- 1
-		BeeLogger.Warn("ProtocolV1 client[%v] exit loop err->%v", client.RemoteAddr(), err)
+		ServerLogger.Warn("ProtocolV1 client[%v] exit loop err->%v", client.RemoteAddr(), err)
 	}()
 	return err
 }
@@ -167,13 +167,13 @@ func parsePack(client *ClientV1) (dd []byte, err error) {
 	_, err = io.ReadFull(client.Reader, buf)
 	if err != nil {
 		if err == io.EOF {
-			BeeLogger.Error("ProtocolV1 read from client %v may be closed", client.Conn.RemoteAddr())
+			ServerLogger.Error("ProtocolV1 read from client %v may be closed", client.Conn.RemoteAddr())
 		}
-		BeeLogger.Error("ProtocolV1 read from client %v err-%v buffed-%v", client.Conn.RemoteAddr(), err, client.Reader.Buffered())
+		ServerLogger.Error("ProtocolV1 read from client %v err-%v buffed-%v", client.Conn.RemoteAddr(), err, client.Reader.Buffered())
 		return nil, err
 	}
 
-	BeeLogger.Info("ProtocolV1 recv buf [%v]", buf)
+	ServerLogger.Info("ProtocolV1 recv buf [%v]", buf)
 
 	// header
 	header = buf[0]
@@ -184,23 +184,23 @@ func parsePack(client *ClientV1) (dd []byte, err error) {
 
 	// cmd
 	cmd = binary.BigEndian.Uint32(buf[1:5])
-	BeeLogger.Info("ProtocolV1 cmd [%v]", cmd)
+	ServerLogger.Info("ProtocolV1 cmd [%v]", cmd)
 
 	// length
 	length = binary.BigEndian.Uint32(buf[5:9])
-	BeeLogger.Info("ProtocolV1 length [%v]", length)
+	ServerLogger.Info("ProtocolV1 length [%v]", length)
 
 	// data
 	data := make([]byte, length)
 	_, err = io.ReadFull(client.Reader, data)
 	if err != nil {
 		if err == io.EOF {
-			BeeLogger.Warn("ProtocolV1 read err-%v client-%v may be closed", err, client.Conn.RemoteAddr())
+			ServerLogger.Warn("ProtocolV1 read err-%v client-%v may be closed", err, client.Conn.RemoteAddr())
 		}
-		BeeLogger.Error("ProtocolV1 read err-%v buffed-%v", err, client.Reader.Buffered())
+		ServerLogger.Error("ProtocolV1 read err-%v buffed-%v", err, client.Reader.Buffered())
 		return nil, err
 	}
 
-	BeeLogger.Info("ProtocolV1 header[%v] cmd[%v] len[%d] data[%v]", header, cmd, length, data)
+	ServerLogger.Info("ProtocolV1 header[%v] cmd[%v] len[%d] data[%v]", header, cmd, length, data)
 	return nil, err
 }

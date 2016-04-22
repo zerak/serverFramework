@@ -16,7 +16,7 @@ type ServerHandler struct {
 }
 
 func (sh *ServerHandler) Handle(clientConn net.Conn) {
-	BeeLogger.Info("handle client[%s]", clientConn.RemoteAddr())
+	ServerLogger.Info("handle client[%s]", clientConn.RemoteAddr())
 
 	// The client should initialize itself by sending a 4 byte sequence indicating
 	// the version of the protocol that it intends to communicate, this will allow us
@@ -24,11 +24,11 @@ func (sh *ServerHandler) Handle(clientConn net.Conn) {
 	buf := make([]byte, 4)
 	_, err := io.ReadFull(clientConn, buf)
 	if err != nil {
-		BeeLogger.Error("failed to read protocol version ->%s", err)
+		ServerLogger.Error("failed to read protocol version ->%s", err)
 		return
 	}
 	protocolMagic := string(buf)
-	BeeLogger.Info("recv client [%v] protocol[%s]", clientConn.RemoteAddr(), protocolMagic)
+	ServerLogger.Info("recv client [%v] protocol[%s]", clientConn.RemoteAddr(), protocolMagic)
 
 	var pro protocol.Protocol
 	switch protocolMagic {
@@ -44,8 +44,8 @@ func (sh *ServerHandler) Handle(clientConn net.Conn) {
 
 	err = pro.IOLoop(clientConn)
 	if err != nil {
-		BeeLogger.Error("client[%s] - [%s]", clientConn.RemoteAddr(), err)
+		ServerLogger.Error("client[%s] - [%s]", clientConn.RemoteAddr(), err)
 		return
 	}
-	BeeLogger.Warn("client exit[%v] - [%v]", clientConn.RemoteAddr(), err)
+	ServerLogger.Warn("client exit[%v] - [%v]", clientConn.RemoteAddr(), err)
 }

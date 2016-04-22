@@ -64,6 +64,6 @@ func newClient(id int64, conn net.Conn, ctx *context) *ClientV1 {
 
 		ExitChan: make(chan int),
 	}
-	BeeLogger.Info("new client id[%d] addr[%s] identifier[%s]", c.ID, conn.RemoteAddr(), c.ClientID)
+	ServerLogger.Info("new client id[%d] addr[%s] identifier[%s]", c.ID, conn.RemoteAddr(), c.ClientID)
 	return c
 }
