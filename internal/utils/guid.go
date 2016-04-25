@@ -13,8 +13,11 @@ import (
 	"encoding/hex"
 	"errors"
 	"time"
+)
 
-	"serverFramework/core"
+const (
+	MsgIDLength       = 16
+	minValidMsgLength = MsgIDLength + 8 + 2 // Timestamp + Attempts
 )
 
 const (
@@ -32,6 +35,7 @@ var ErrTimeBackwards = errors.New("time has gone backwards")
 var ErrSequenceExpired = errors.New("sequence expired")
 var ErrIDBackwards = errors.New("ID went backward")
 
+type MessageID [MsgIDLength]byte
 type guid int64
 
 type guidFactory struct {
@@ -72,8 +76,8 @@ func (f *guidFactory) NewGUID(workerID int64) (guid, error) {
 	return id, nil
 }
 
-func (g guid) Hex() core.MessageID {
-	var h core.MessageID
+func (g guid) Hex() MessageID {
+	var h MessageID
 	var b [8]byte
 
 	b[0] = byte(g >> 56)
