@@ -37,6 +37,7 @@ func (sh *ServerHandler) Handle(clientConn net.Conn) {
 	case "  V1", "  v1":
 		pro = &ProtocolV1{ctx: sh.ctx}
 	case "  V2", "  v2":
+		// todo protocol v2
 		pro = &ProtocolV1{ctx: sh.ctx}
 	default:
 		return

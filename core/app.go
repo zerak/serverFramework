@@ -19,14 +19,12 @@ var (
 type ServerCore struct {
 	sync.RWMutex
 
-	// 64bit atomic vars need to be first for proper alignment on 32bit platforms
-	clientIDSequence int64
-	startTime        time.Time
+	clientIDSequence int64     // 64bit atomic vars need to be first for proper alignment on 32bit platforms
+	startTime        time.Time // server start time
 	tcpListener      net.Listener
 	wg               utils.WaitGroupWrapper
-
-	db    chan *moduledb.DBModuler
-	logic chan *modulelogic.LogicModuler
+	db               chan *moduledb.DBModuler       // the db chan
+	logic            chan *modulelogic.LogicModuler // the logic chan
 }
 
 func init() {
@@ -42,9 +40,9 @@ func New() *ServerCore {
 }
 
 func (sc *ServerCore) Run() {
-	tcpListener, err := net.Listen("tcp", "127.0.0.1:8888")
+	tcpListener, err := net.Listen("tcp", SConfig.TCPAddr)
 	if err != nil {
-		ServerLogger.Error("listen [%s] failed ->%s", "localhost", err)
+		ServerLogger.Error("listen [%s] failed ->%s", SConfig.TCPAddr, err)
 		os.Exit(0)
 	}
 
@@ -52,7 +50,7 @@ func (sc *ServerCore) Run() {
 	sc.tcpListener = tcpListener
 	sc.Unlock()
 
-	Info("server listen on 8888")
+	Info("server listen on", SConfig.TCPAddr)
 
 	ctx := &context{sc}
 

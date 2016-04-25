@@ -35,11 +35,12 @@ const (
 // ServerLogger references the used application logger.
 var ServerLogger = logs.NewLogger(100)
 
+// for go run not build
 func init() {
 	SetLevel(LevelDebug)
 	SetLogFuncCall(true)
 	SetLogger("console", "")
-	SetLogger("file", `{"filename":"beelog.log","level":7,"maxlines":0,"maxsize":0,"daily":true,"maxdays":10}`)
+	//SetLogger("file", `{"filename":"log.log","level":7,"maxlines":0,"maxsize":0,"daily":true,"maxdays":10}`)
 }
 
 // SetLevel sets the global log level used by the simple logger.

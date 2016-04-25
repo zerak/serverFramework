@@ -21,8 +21,16 @@ type Config struct {
 	RecoverPanic        bool
 	MaxMemory           int64
 	EnableErrorsShow    bool
+	TCPAddr             string
 	AdminConf           AdminConfig
 	LogConf             LogConfig
+}
+
+// for debug print
+func (c Config) String() {
+	fmt.Printf("config[%v %v %v %v %v %v %v %v] admin[%v %v %v %v %v %v %v %v] log[%v %v %v]\n\n", c.AppName, c.RunMode, c.RouterCaseSensitive, c.ServerName, c.RecoverPanic, c.MaxMemory, c.EnableErrorsShow, c.TCPAddr,
+		c.AdminConf.ServerTimeOut, c.AdminConf.ListenTCP4, c.AdminConf.EnableHTTP, c.AdminConf.HTTPAddr, c.AdminConf.HTTPPort, c.AdminConf.EnableAdmin, c.AdminConf.AdminAddr, c.AdminConf.AdminPort,
+		c.LogConf.AccessLogs, c.LogConf.FileLineNum, c.LogConf.Outputs)
 }
 
 // AdminConfig holds for admin control http related config
@@ -65,8 +73,6 @@ func init() {
 	AppPath, _ = filepath.Abs(filepath.Dir(os.Args[0]))
 	os.Chdir(AppPath)
 
-	fmt.Printf("app path %v\n", AppPath)
-
 	SConfig = &Config{
 		AppName:             "server",
 		RunMode:             DEV,
@@ -75,6 +81,7 @@ func init() {
 		RecoverPanic:        true,
 		MaxMemory:           1 << 26, //64MB
 		EnableErrorsShow:    true,
+		TCPAddr:             "127.0.0.1:60060",
 		AdminConf: AdminConfig{
 			ServerTimeOut: 0,
 			ListenTCP4:    false,
@@ -120,8 +127,9 @@ func parseConfig(appConfigPath string) (err error) {
 	SConfig.RecoverPanic = AppConfig.DefaultBool("RecoverPanic", SConfig.RecoverPanic)
 	SConfig.RouterCaseSensitive = AppConfig.DefaultBool("RouterCaseSensitive", SConfig.RouterCaseSensitive)
 	SConfig.ServerName = AppConfig.DefaultString("ServerName", SConfig.ServerName)
-	SConfig.EnableErrorsShow = AppConfig.DefaultBool("EnableErrorsShow", SConfig.EnableErrorsShow)
 	SConfig.MaxMemory = AppConfig.DefaultInt64("MaxMemory", SConfig.MaxMemory)
+	SConfig.EnableErrorsShow = AppConfig.DefaultBool("EnableErrorsShow", SConfig.EnableErrorsShow)
+	SConfig.TCPAddr = AppConfig.DefaultString("TCPAddr", SConfig.TCPAddr)
 
 	SConfig.AdminConf.HTTPAddr = AppConfig.String("HTTPAddr")
 	SConfig.AdminConf.HTTPPort = AppConfig.DefaultInt("HTTPPort", SConfig.AdminConf.HTTPPort)
@@ -154,10 +162,14 @@ func parseConfig(appConfigPath string) (err error) {
 			fmt.Printf("%s with the config `%s` got err:%s\n", adaptor, config, err)
 		}
 	}
+	if SConfig.RunMode == DEV {
+		SetLevel(LevelInformational)
+	} else if SConfig.RunMode == PROD {
+		SetLevel(LevelWarning)
+	}
 	SetLogFuncCall(SConfig.LogConf.FileLineNum)
 
-	//fmt.Printf("config->%v\n", AppConfig)
-	fmt.Print(AppConfig)
+	//fmt.Print(SConfig)
 	return nil
 }
 
