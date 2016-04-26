@@ -37,10 +37,10 @@ type ProtocolV1 struct {
 func (p *ProtocolV1) IOLoop(conn net.Conn) error {
 	var err error
 	var header byte
-	//var cmd uint32
+	var cmd uint32
 	var length uint32
 	clientId := atomic.AddInt64(&p.ctx.core.clientIDSequence, 1)
-	client := newClient(clientId, conn, p.ctx)
+	client := NewClient(clientId, conn, p.ctx)
 
 	// synchronize the startup of messagePump in order
 	// to guarantee that it gets a chance to initialize
@@ -69,7 +69,7 @@ func (p *ProtocolV1) IOLoop(conn net.Conn) error {
 		}
 
 		// cmd
-		//cmd = binary.BigEndian.Uint32(buf[1:5])
+		cmd = binary.BigEndian.Uint32(buf[1:5])
 		//fmt.Printf("ProtocolV1 cmd [%v]\n", cmd)
 
 		// length
@@ -84,14 +84,15 @@ func (p *ProtocolV1) IOLoop(conn net.Conn) error {
 			break
 		}
 
-		//fmt.Printf("ProtocolV1 header[%v] cmd[%v] len[%d] data[%v]\n", header, cmd, length, data)
+		ServerLogger.Info("ProtocolV1 header[%v] cmd[%v] len[%d] data[%v]", header, cmd, length, string(data))
 
-		err = p.Send(client, []byte("string send to client"))
-		if err != nil {
-			err = fmt.Errorf("failed to send response ->%s", err)
-			break
-		}
-
+		// new msg
+		msg := client.Pool.Get().(*Message)
+		//msg := NewMessage(int(cmd), data, client)
+		msg.ID = int(cmd)
+		msg.Body = data
+		msg.Conn = client.Conn
+		client.MsgChan <- msg
 	} // END CLIENT LOOP
 
 	defer func() {
@@ -107,6 +108,7 @@ func (p *ProtocolV1) messagePump(client *ClientV1, startedChan chan bool) {
 
 	hbTicker := time.NewTicker(client.HeartbeatInterval)
 	hbChan := hbTicker.C
+	msgChan := client.MsgChan
 
 	//msgTimeOut := client.MsgTimeout
 
@@ -120,6 +122,17 @@ func (p *ProtocolV1) messagePump(client *ClientV1, startedChan chan bool) {
 			err = p.Send(client, []byte("heartBeat"))
 			if err != nil {
 				goto exit
+			}
+		case msg, ok := <-msgChan:
+			if ok {
+				ServerLogger.Info("recv msg id[%v] b[%v] t[%v]", msg.ID, string(msg.Body), msg.Timestamp)
+
+				if _, ok := msgHandle[string(msg.ID)]; ok {
+					msgHandle[string(msg.ID)].ProcessMsg(p, client)
+				} else {
+					ServerLogger.Warn("unhandle msg[%v]", msg.ID)
+					client.Close()
+				}
 			}
 		case <-client.ExitChan:
 			goto exit

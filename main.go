@@ -6,6 +6,7 @@ import (
 	_ "net/http/pprof"
 
 	"serverFramework/core"
+	"serverFramework/internal/utils"
 )
 
 func main() {
@@ -18,6 +19,17 @@ func main() {
 		log.Println(http.ListenAndServe("localhost:6060", nil))
 	}()
 
+	var wg utils.WaitGroupWrapper
+	wg.Wrap(func() {
+		serverRoom()
+	})
+
 	// sc.
 	// sync.WaitGroup.Wait()
+}
+
+func serverRoom() {
+	for {
+
+	}
 }

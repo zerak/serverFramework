@@ -2,6 +2,7 @@ package core
 
 import (
 	"net"
+	"sync"
 	"time"
 )
 
@@ -16,7 +17,7 @@ type Message struct {
 	ID        int
 	Body      []byte
 	Timestamp int64
-	Attempts  uint16
+	pool      sync.Pool
 
 	net.Conn
 }
@@ -28,5 +29,11 @@ func NewMessage(id int, body []byte, client *ClientV1) *Message {
 		Timestamp: time.Now().UnixNano(),
 
 		Conn: client.Conn,
+	}
+}
+
+func NewEmptyMsg() *Message {
+	return &Message{
+		Timestamp: time.Now().UnixNano(),
 	}
 }

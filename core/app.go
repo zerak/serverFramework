@@ -60,5 +60,10 @@ func (sc *ServerCore) Run() {
 		HandleAccept(sc.tcpListener, handle)
 	})
 
+	// start process msg
+	sc.wg.Wrap(func() {
+
+	})
+
 	sc.wg.Wait()
 }

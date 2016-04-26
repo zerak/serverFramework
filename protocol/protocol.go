@@ -1,9 +1,9 @@
 package protocol
 
 import (
+	"bufio"
 	"net"
 	"strings"
-	"bufio"
 )
 
 type Protocoler interface {

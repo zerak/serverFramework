@@ -1,9 +1,9 @@
 package protocol
 
 import (
-	"net"
 	"bufio"
 	"errors"
+	"net"
 )
 
 const (
@@ -11,7 +11,7 @@ const (
 )
 
 func init() {
-	Register("  v1",&ProtocolV1{})
+	Register("  v1", &ProtocolV1{})
 }
 
 /*
@@ -101,8 +101,8 @@ func (p *ProtocolV1) IOLoop(conn net.Conn) error {
 	return err
 }
 
-func (p *ProtocolV1)Send(w *bufio.Writer, data []byte) (int, error)  {
-	return 0,errors.New("")
+func (p *ProtocolV1) Send(w *bufio.Writer, data []byte) (int, error) {
+	return 0, errors.New("")
 }
 
 //func (p *ProtocolV1) messagePump(client *ClientV1, startedChan chan bool) {

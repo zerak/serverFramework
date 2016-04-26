@@ -22,8 +22,8 @@ type Config struct {
 	MaxMemory           int64
 	EnableErrorsShow    bool
 	TCPAddr             string
-	AdminConf           AdminConfig
-	LogConf             LogConfig
+	AdminConf           AdminConfig // monitor config
+	LogConf             LogConfig   // log config
 }
 
 // for debug print

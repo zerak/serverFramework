@@ -17,7 +17,7 @@ func (p *ProtocolJson) IOLoop(conn net.Conn) error {
 	var line []byte
 
 	clientId := atomic.AddInt64(&p.ctx.core.clientIDSequence, 1)
-	client := newClient(clientId, conn, p.ctx)
+	client := NewClient(clientId, conn, p.ctx)
 
 	fmt.Printf("[ProtocolJson::Loop] clientid[%d]\n", client.ID)
 

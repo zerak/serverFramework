@@ -25,6 +25,8 @@ type ClientV1 struct {
 	HeartbeatInterval time.Duration
 	MsgTimeout        time.Duration
 
+	Pool     sync.Pool
+	MsgChan  chan *Message
 	ExitChan chan int
 
 	writeLock sync.RWMutex
@@ -40,7 +42,7 @@ func (c *ClientV1) Close() {
 	close(c.ExitChan)
 }
 
-func newClient(id int64, conn net.Conn, ctx *context) *ClientV1 {
+func NewClient(id int64, conn net.Conn, ctx *context) *ClientV1 {
 	Info("new client ...")
 	var identifier string
 	if conn != nil {
@@ -62,8 +64,14 @@ func newClient(id int64, conn net.Conn, ctx *context) *ClientV1 {
 		HeartbeatInterval: 10 * time.Second / 2,
 		MsgTimeout:        10 * time.Second / 2,
 
+		MsgChan:  make(chan *Message, 10000),
 		ExitChan: make(chan int),
 	}
+
+	c.Pool.New = func() interface{} {
+		return NewEmptyMsg()
+	}
+
 	ServerLogger.Info("new client id[%d] addr[%s] identifier[%s]", c.ID, conn.RemoteAddr(), c.ClientID)
 	return c
 }
