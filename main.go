@@ -23,6 +23,7 @@ func main() {
 	wg.Wrap(func() {
 		serverRoom()
 	})
+	wg.Wait()
 
 	// sc.
 	// sync.WaitGroup.Wait()
