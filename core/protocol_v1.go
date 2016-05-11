@@ -8,7 +8,9 @@ import (
 	"sync/atomic"
 	"time"
 
-	"serverFramework/internal/protocol"
+	. "serverFramework/client"
+	"serverFramework/protocol"
+	"strconv"
 )
 
 const (
@@ -31,7 +33,10 @@ const (
 //   [0x05  cmd   len  data]
 */
 type ProtocolV1 struct {
-	ctx *context
+}
+
+func init() {
+	protocol.Register("  v1", &ProtocolV1{})
 }
 
 func (p *ProtocolV1) IOLoop(conn net.Conn) error {
@@ -39,8 +44,8 @@ func (p *ProtocolV1) IOLoop(conn net.Conn) error {
 	var header byte
 	var cmd uint32
 	var length uint32
-	clientId := atomic.AddInt64(&p.ctx.core.clientIDSequence, 1)
-	client := NewClient(clientId, conn, p.ctx)
+	clientId := atomic.AddInt64(&ServerApp.clientIDSequence, 1)
+	client := NewClient(clientId, conn)
 
 	// synchronize the startup of messagePump in order
 	// to guarantee that it gets a chance to initialize
@@ -59,8 +64,6 @@ func (p *ProtocolV1) IOLoop(conn net.Conn) error {
 			break
 		}
 
-		//fmt.Printf("ProtocolV1 recv buf [%v]\n", buf)
-
 		// header
 		header = buf[0]
 		if header != 0x05 {
@@ -70,11 +73,9 @@ func (p *ProtocolV1) IOLoop(conn net.Conn) error {
 
 		// cmd
 		cmd = binary.BigEndian.Uint32(buf[1:5])
-		//fmt.Printf("ProtocolV1 cmd [%v]\n", cmd)
 
 		// length
 		length = binary.BigEndian.Uint32(buf[5:9])
-		//fmt.Printf("ProtocolV1 length [%v]\n", length)
 
 		// data
 		data := make([]byte, length)
@@ -92,15 +93,41 @@ func (p *ProtocolV1) IOLoop(conn net.Conn) error {
 		msg.ID = int(cmd)
 		msg.Body = data
 		msg.Conn = client.Conn
+
 		client.MsgChan <- msg
-	} // END CLIENT LOOP
+	}
 
 	defer func() {
-		defer conn.Close()
 		client.ExitChan <- 1
+		client.Exit()
 		ServerLogger.Warn("ProtocolV1 client[%v] exit loop err->%v", client.RemoteAddr(), err)
 	}()
 	return err
+}
+
+func (p *ProtocolV1) Send(c Client, data []byte) (int, error) {
+	c.WLock()
+
+	//// todo
+	//// set write deadline or not
+	//var zeroTime time.Time
+	//if c.GetHBInterval() > 0 {
+	//	c.SetWriteDeadline(time.Now().Add(c.GetHBInterval()))
+	//} else {
+	//	c.SetWriteDeadline(zeroTime)
+	//}
+
+	// todo
+	// check write len(data) size buf
+	n, err := c.Write(data)
+	if err != nil {
+		c.WUnlock()
+		return n, err
+	}
+	c.Flush()
+	c.WUnlock()
+
+	return n, nil
 }
 
 func (p *ProtocolV1) messagePump(client *ClientV1, startedChan chan bool) {
@@ -119,19 +146,19 @@ func (p *ProtocolV1) messagePump(client *ClientV1, startedChan chan bool) {
 	for {
 		select {
 		case <-hbChan:
-			err = p.Send(client, []byte("heartBeat"))
+			_, err = p.Send(client, []byte("s2c heartbeat"))
 			if err != nil {
 				goto exit
 			}
 		case msg, ok := <-msgChan:
 			if ok {
-				ServerLogger.Info("recv msg id[%v] b[%v] t[%v]", msg.ID, string(msg.Body), msg.Timestamp)
+				ServerLogger.Info("cid[%v] recv msg id[%v] b[%v] t[%v]", client.GetID(), msg.ID, string(msg.Body), msg.Timestamp)
 
-				if _, ok := msgHandle[string(msg.ID)]; ok {
-					msgHandle[string(msg.ID)].ProcessMsg(p, client)
+				if _, ok := msgHandle[strconv.Itoa(msg.ID)]; ok {
+					msgHandle[strconv.Itoa(msg.ID)].ProcessMsg(p, client)
 				} else {
-					ServerLogger.Warn("unhandle msg[%v]", msg.ID)
-					client.Close()
+					ServerLogger.Warn("cid[%v] unhandle msg[%v]", client.GetID(), msg.ID)
+					goto exit
 				}
 			}
 		case <-client.ExitChan:
@@ -141,37 +168,12 @@ func (p *ProtocolV1) messagePump(client *ClientV1, startedChan chan bool) {
 
 exit:
 	hbTicker.Stop()
-}
-
-func (p *ProtocolV1) Send(client *ClientV1, data []byte) error {
-	client.writeLock.Lock()
-
-	// var zeroTime time.Time
-	// if client.HeartbeatInterval > 0 {
-	// 	client.SetWriteDeadline(time.Now().Add(client.HeartbeatInterval))
-	// } else {
-	// 	client.SetWriteDeadline(zeroTime)
-	// }
-
-	// _, err := SendFramedResponse(client.Writer, frameType, data)
-	_, err := protocol.SendResponse(client.Writer, data)
 	if err != nil {
-		client.writeLock.Unlock()
-		return err
+		ServerLogger.Warn("message pump error[%v]", err)
 	}
-
-	// if frameType != frameTypeMessage {
-	// 	err = client.Flush()
-	// }
-
-	client.Writer.Flush()
-
-	client.writeLock.Unlock()
-
-	return err
 }
 
-func parsePack(client *ClientV1) (dd []byte, err error) {
+func (p *ProtocolV1) decodePack(client *ClientV1) (dd []byte, err error) {
 	return nil, err
 	var header byte
 	var cmd uint32
@@ -216,4 +218,8 @@ func parsePack(client *ClientV1) (dd []byte, err error) {
 
 	ServerLogger.Info("ProtocolV1 header[%v] cmd[%v] len[%d] data[%v]", header, cmd, length, data)
 	return nil, err
+}
+
+func (p *ProtocolV1) encodePack(header byte, cmd, length int, data []byte) {
+
 }

@@ -1,12 +1,19 @@
 package core
 
+import (
+	. "serverFramework/client"
+	. "serverFramework/protocol"
+)
+
 type MsgHandler interface {
-	ProcessMsg(p *ProtocolV1, client *ClientV1)
+	ProcessMsg(p Protocol, client Client)
 }
 
 var msgHandle = make(map[string]MsgHandler)
 
-func ResigerMsgHandler(name string, adapter MsgHandler) {
+func ResigerMsg(name string, adapter MsgHandler) {
+	Info("msg handler ", name)
+
 	if adapter == nil {
 		Error("message handler register adapter is nil")
 		return

@@ -22,7 +22,7 @@ type Message struct {
 	net.Conn
 }
 
-func NewMessage(id int, body []byte, client *ClientV1) *Message {
+func NewMsg(id int, body []byte, client *ClientV1) *Message {
 	return &Message{
 		ID:        id,
 		Body:      body,
@@ -32,7 +32,7 @@ func NewMessage(id int, body []byte, client *ClientV1) *Message {
 	}
 }
 
-func NewEmptyMsg() *Message {
+func NewMsgEmpty() *Message {
 	return &Message{
 		Timestamp: time.Now().UnixNano(),
 	}

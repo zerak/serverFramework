@@ -8,7 +8,6 @@ import (
 )
 
 type ProtocolJson struct {
-	ctx *context
 }
 
 func (p *ProtocolJson) IOLoop(conn net.Conn) error {
@@ -16,8 +15,8 @@ func (p *ProtocolJson) IOLoop(conn net.Conn) error {
 	var err error
 	var line []byte
 
-	clientId := atomic.AddInt64(&p.ctx.core.clientIDSequence, 1)
-	client := NewClient(clientId, conn, p.ctx)
+	clientId := atomic.AddInt64(&ServerApp.clientIDSequence, 1)
+	client := NewClient(clientId, conn)
 
 	fmt.Printf("[ProtocolJson::Loop] clientid[%d]\n", client.ID)
 

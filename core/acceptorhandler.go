@@ -3,19 +3,19 @@ package core
 import (
 	"io"
 	"net"
+	"strings"
 
-	"serverFramework/internal/protocol"
+	"serverFramework/protocol"
 )
 
 type Handler interface {
 	Handle(net.Conn)
 }
 
-type ServerHandler struct {
-	ctx *context
+type AcceptorHandler struct {
 }
 
-func (sh *ServerHandler) Handle(clientConn net.Conn) {
+func (sh *AcceptorHandler) Handle(clientConn net.Conn) {
 	ServerLogger.Info("handle client[%s]", clientConn.RemoteAddr())
 
 	// The client should initialize itself by sending a 4 byte sequence indicating
@@ -28,25 +28,19 @@ func (sh *ServerHandler) Handle(clientConn net.Conn) {
 		return
 	}
 	protocolMagic := string(buf)
+	protocolMagic = strings.ToUpper(protocolMagic)
 	ServerLogger.Info("recv client [%v] protocol[%s]", clientConn.RemoteAddr(), protocolMagic)
 
-	var pro protocol.Protocol
-	switch protocolMagic {
-	case "json":
-		pro = &ProtocolJson{ctx: sh.ctx}
-	case "  V1", "  v1":
-		pro = &ProtocolV1{ctx: sh.ctx}
-	case "  V2", "  v2":
-		// todo protocol v2
-		pro = &ProtocolV1{ctx: sh.ctx}
-	default:
+	if _, ok := protocol.ProAdapts[protocolMagic]; ok {
+		err = protocol.ProAdapts[protocolMagic].IOLoop(clientConn)
+		if err != nil {
+			ServerLogger.Error("client[%s] - [%s]", clientConn.RemoteAddr(), err)
+			return
+		}
+	} else {
+		ServerLogger.Warn("the protocol [%v] not support", protocolMagic)
 		return
 	}
 
-	err = pro.IOLoop(clientConn)
-	if err != nil {
-		ServerLogger.Error("client[%s] - [%s]", clientConn.RemoteAddr(), err)
-		return
-	}
 	ServerLogger.Warn("client exit[%v] - [%v]", clientConn.RemoteAddr(), err)
 }

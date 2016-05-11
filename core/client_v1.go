@@ -15,8 +15,7 @@ type ClientV1 struct {
 
 	net.Conn
 
-	ID  int64
-	ctx *context
+	ID int64
 
 	// reading/writing interfaces
 	Reader *bufio.Reader
@@ -37,12 +36,36 @@ func (c *ClientV1) String() string {
 	return c.RemoteAddr().String()
 }
 
-func (c *ClientV1) Close() {
+func (c *ClientV1) Exit() {
 	c.Conn.Close()
 	close(c.ExitChan)
 }
 
-func NewClient(id int64, conn net.Conn, ctx *context) *ClientV1 {
+//func (c * ClientV1) Exit(){
+//	c.ExitChan <- 1
+//}
+
+func (c *ClientV1) WLock() {
+	c.writeLock.Lock()
+}
+
+func (c *ClientV1) WUnlock() {
+	c.writeLock.Unlock()
+}
+
+func (c *ClientV1) Write(data []byte) (int, error) {
+	return c.Writer.Write(data)
+}
+
+func (c *ClientV1) Flush() {
+	c.Writer.Flush()
+}
+
+func (c *ClientV1) GetID() int64 {
+	return c.ID
+}
+
+func NewClient(id int64, conn net.Conn) *ClientV1 {
 	Info("new client ...")
 	var identifier string
 	if conn != nil {
@@ -55,8 +78,7 @@ func NewClient(id int64, conn net.Conn, ctx *context) *ClientV1 {
 
 		Conn: conn,
 
-		ID:  id,
-		ctx: ctx,
+		ID: id,
 
 		Reader: bufio.NewReaderSize(conn, defaultBufferSize),
 		Writer: bufio.NewWriterSize(conn, defaultBufferSize),
@@ -69,7 +91,7 @@ func NewClient(id int64, conn net.Conn, ctx *context) *ClientV1 {
 	}
 
 	c.Pool.New = func() interface{} {
-		return NewEmptyMsg()
+		return NewMsgEmpty()
 	}
 
 	ServerLogger.Info("new client id[%d] addr[%s] identifier[%s]", c.ID, conn.RemoteAddr(), c.ClientID)

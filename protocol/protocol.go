@@ -1,25 +1,27 @@
 package protocol
 
 import (
-	"bufio"
 	"net"
 	"strings"
+
+	. "serverFramework/client"
 )
 
-type Protocoler interface {
+// Protocol describes the basic behavior of any protocol in the system
+type Protocol interface {
 	IOLoop(conn net.Conn) error
-	Send(w *bufio.Writer, data []byte) (int, error)
+	Send(c Client, data []byte) (int, error)
 }
 
-var proAdapts = make(map[string]Protocoler)
+var ProAdapts = make(map[string]Protocol)
 
-func Register(name string, pro Protocoler) {
+func Register(name string, pro Protocol) {
 	if pro == nil {
 		panic("protocol: Register pro is nil")
 	}
 
-	if _, ok := proAdapts[strings.ToUpper(name)]; ok {
+	if _, ok := ProAdapts[strings.ToUpper(name)]; ok {
 		panic("protocol: Register called twice for adapter " + name)
 	}
-	proAdapts[name] = pro
+	ProAdapts[strings.ToUpper(name)] = pro
 }

@@ -1,7 +1,14 @@
 package core
 
+import (
+	"strings"
+
+	. "serverFramework/client"
+	. "serverFramework/protocol"
+)
+
 type EventHandler interface {
-	ProcessEvent(p *ProtocolV1, client *ClientV1)
+	ProcessEvent(p *Protocol, client *Client)
 }
 
 var eventsHandler = make(map[string]EventHandler)
@@ -12,10 +19,10 @@ func ResigerEvent(event string, handle EventHandler) {
 		return
 	}
 
-	if _, ok := eventsHandler[event]; ok {
+	if _, ok := eventsHandler[strings.ToUpper(event)]; ok {
 		Warn("the event", event, "already registed")
 		return
 	}
 
-	eventsHandler[event] = handle
+	eventsHandler[strings.ToUpper(event)] = handle
 }

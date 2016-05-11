@@ -3,12 +3,23 @@ package core
 import (
 	"net"
 	"os"
+	"runtime"
 	"sync"
 	"time"
 
-	"serverFramework/internal/moduledb"
-	"serverFramework/internal/modulelogic"
-	"serverFramework/internal/utils"
+	"serverFramework/moduledb"
+	"serverFramework/modulelogic"
+	"serverFramework/utils"
+)
+
+const (
+	// VERSION represent server framework version.
+	VERSION = "0.0.1"
+
+	// DEV is for develop
+	DEV = "dev"
+	// PROD is for production
+	PROD = "prod"
 )
 
 var (
@@ -52,9 +63,7 @@ func (sc *ServerCore) Run() {
 
 	Info("server listen on", SConfig.TCPAddr)
 
-	ctx := &context{sc}
-
-	handle := &ServerHandler{ctx: ctx}
+	handle := &AcceptorHandler{}
 	// start accept routine
 	sc.wg.Wrap(func() {
 		HandleAccept(sc.tcpListener, handle)
@@ -66,4 +75,8 @@ func (sc *ServerCore) Run() {
 	})
 
 	sc.wg.Wait()
+}
+
+func (sc *ServerCore) Version(app string) {
+	ServerLogger.Info("%s v%s(built w/%s)", app, VERSION, runtime.Version())
 }

@@ -5,16 +5,6 @@ import (
 	"strings"
 )
 
-const (
-	// VERSION represent server framework version.
-	VERSION = "0.0.1"
-
-	// DEV is for develop
-	DEV = "dev"
-	// PROD is for production
-	PROD = "prod"
-)
-
 func initBeforeRun() {
 }
 

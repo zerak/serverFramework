@@ -6,9 +6,6 @@ import (
 	"strings"
 )
 
-type Acceptor struct {
-}
-
 func HandleAccept(listener net.Listener, handler Handler) {
 	Info("start handle accept ...")
 

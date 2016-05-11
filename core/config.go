@@ -1,3 +1,17 @@
+// Copyright 2014 beego Author. All Rights Reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 // core config base on beego config
 package core
 
@@ -7,7 +21,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"serverFramework/internal/utils"
+	"serverFramework/utils"
 
 	"github.com/astaxie/beego/config"
 )
@@ -22,8 +36,10 @@ type Config struct {
 	MaxMemory           int64
 	EnableErrorsShow    bool
 	TCPAddr             string
-	AdminConf           AdminConfig // monitor config
-	LogConf             LogConfig   // log config
+	MsgSize             int // client msg buffer size
+
+	AdminConf AdminConfig // monitor config
+	LogConf   LogConfig   // log config
 }
 
 // for debug print
@@ -82,6 +98,7 @@ func init() {
 		MaxMemory:           1 << 26, //64MB
 		EnableErrorsShow:    true,
 		TCPAddr:             "127.0.0.1:60060",
+		MsgSize:             10000,
 		AdminConf: AdminConfig{
 			ServerTimeOut: 0,
 			ListenTCP4:    false,
@@ -130,6 +147,7 @@ func parseConfig(appConfigPath string) (err error) {
 	SConfig.MaxMemory = AppConfig.DefaultInt64("MaxMemory", SConfig.MaxMemory)
 	SConfig.EnableErrorsShow = AppConfig.DefaultBool("EnableErrorsShow", SConfig.EnableErrorsShow)
 	SConfig.TCPAddr = AppConfig.DefaultString("TCPAddr", SConfig.TCPAddr)
+	SConfig.MsgSize = AppConfig.DefaultInt("MsgSize", SConfig.MsgSize)
 
 	SConfig.AdminConf.HTTPAddr = AppConfig.String("HTTPAddr")
 	SConfig.AdminConf.HTTPPort = AppConfig.DefaultInt("HTTPPort", SConfig.AdminConf.HTTPPort)
@@ -170,6 +188,7 @@ func parseConfig(appConfigPath string) (err error) {
 	SetLogFuncCall(SConfig.LogConf.FileLineNum)
 
 	//fmt.Print(SConfig)
+	ServerLogger.Info("%v", SConfig)
 	return nil
 }
 
