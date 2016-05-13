@@ -11,6 +11,7 @@ import (
 type Protocol interface {
 	IOLoop(conn net.Conn) error
 	Send(c Client, data []byte) (int, error)
+	EncodePack(header byte, cmd, length int, data []byte) ([]byte, error)
 }
 
 var ProAdapts = make(map[string]Protocol)

@@ -5,8 +5,6 @@ import (
 )
 
 type Client interface {
-	//net.Conn
-
 	String() string
 	Exit()
 

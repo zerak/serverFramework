@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"strconv"
 	"sync/atomic"
 	"time"
 
 	. "serverFramework/client"
 	"serverFramework/protocol"
-	"strconv"
 )
 
 const (
@@ -98,7 +98,6 @@ func (p *ProtocolV1) IOLoop(conn net.Conn) error {
 	}
 
 	defer func() {
-		client.ExitChan <- 1
 		client.Exit()
 		ServerLogger.Warn("ProtocolV1 client[%v] exit loop err->%v", client.RemoteAddr(), err)
 	}()
@@ -137,7 +136,7 @@ func (p *ProtocolV1) messagePump(client *ClientV1, startedChan chan bool) {
 	hbChan := hbTicker.C
 	msgChan := client.MsgChan
 
-	//msgTimeOut := client.MsgTimeout
+	//msgTimeOut := client.GetMsgTimeout
 
 	// signal to the goroutine that started the messagePump
 	// that we've started up
@@ -220,6 +219,8 @@ func (p *ProtocolV1) decodePack(client *ClientV1) (dd []byte, err error) {
 	return nil, err
 }
 
-func (p *ProtocolV1) encodePack(header byte, cmd, length int, data []byte) {
+// todo
+func (p *ProtocolV1) EncodePack(header byte, cmd, length int, data []byte) (body []byte, err error) {
 
+	return data, err
 }

@@ -5,9 +5,15 @@ import (
 	"io"
 	"net"
 	"sync/atomic"
+
+	"serverFramework/protocol"
 )
 
 type ProtocolJson struct {
+}
+
+func init() {
+	protocol.Register("  json", &ProtocolV1{})
 }
 
 func (p *ProtocolJson) IOLoop(conn net.Conn) error {

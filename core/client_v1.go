@@ -37,13 +37,10 @@ func (c *ClientV1) String() string {
 }
 
 func (c *ClientV1) Exit() {
+	c.ExitChan <- 1
 	c.Conn.Close()
 	close(c.ExitChan)
 }
-
-//func (c * ClientV1) Exit(){
-//	c.ExitChan <- 1
-//}
 
 func (c *ClientV1) WLock() {
 	c.writeLock.Lock()
@@ -63,6 +60,10 @@ func (c *ClientV1) Flush() {
 
 func (c *ClientV1) GetID() int64 {
 	return c.ID
+}
+
+func (c *ClientV1) GetHBInterval() time.Duration {
+	return c.HeartbeatInterval
 }
 
 func NewClient(id int64, conn net.Conn) *ClientV1 {
