@@ -154,7 +154,7 @@ func (p *ProtocolV1) messagePump(client *ClientV1, startedChan chan bool) {
 				ServerLogger.Info("cid[%v] recv msg id[%v] b[%v] t[%v]", client.GetID(), msg.ID, string(msg.Body), msg.Timestamp)
 
 				if _, ok := msgHandle[strconv.Itoa(msg.ID)]; ok {
-					msgHandle[strconv.Itoa(msg.ID)].ProcessMsg(p, client)
+					msgHandle[strconv.Itoa(msg.ID)].ProcessMsg(p, client, msg)
 				} else {
 					ServerLogger.Warn("cid[%v] unhandle msg[%v]", client.GetID(), msg.ID)
 					goto exit

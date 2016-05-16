@@ -37,6 +37,8 @@ var ServerLogger = logs.NewLogger(100)
 
 // for go run not build
 func init() {
+	// todo
+	// for test add debug info
 	SetLevel(LevelDebug)
 	SetLogFuncCall(true)
 	SetLogger("console", "")

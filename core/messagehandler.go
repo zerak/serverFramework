@@ -6,7 +6,7 @@ import (
 )
 
 type MsgHandler interface {
-	ProcessMsg(p Protocol, client Client)
+	ProcessMsg(p Protocol, client Client, msg *Message)
 }
 
 var msgHandle = make(map[string]MsgHandler)
