@@ -11,8 +11,8 @@ type MsgHandler interface {
 
 var msgHandle = make(map[string]MsgHandler)
 
-func ResigerMsg(name string, adapter MsgHandler) {
-	Info("msg handler ", name)
+func RegisterMsg(name string, adapter MsgHandler) {
+	Info("register msg handler", name)
 
 	if adapter == nil {
 		Error("message handler register adapter is nil")

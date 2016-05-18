@@ -17,8 +17,8 @@ type Message struct {
 
 func NewMsg(id int, body []byte, client *ClientV1) *Message {
 	return &Message{
-		ID:        id,
-		Body:      body,
+		ID:   id,
+		Body: body,
 		//Timestamp: time.Now().UnixNano(),
 		Timestamp: time.Now(),
 

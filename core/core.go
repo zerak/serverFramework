@@ -22,10 +22,12 @@ func Run(params ...string) {
 		strs := strings.Split(params[0], ":")
 		if len(strs) > 0 && strs[0] != "" {
 			addr := strs[0]
+			SConfig.TCPAddr = addr
 			ServerLogger.Info("listen on addr [%v]", addr)
 		}
 		if len(strs) > 1 && strs[1] != "" {
 			port, _ := strconv.Atoi(strs[1])
+			SConfig.TCPPort = port
 			ServerLogger.Info("listen on port [%v]", port)
 		}
 	}

@@ -36,10 +36,12 @@ type Config struct {
 	MaxMemory           int64
 	EnableErrorsShow    bool
 	TCPAddr             string
+	TCPPort             int
 	MsgSize             int // client msg buffer size
 
 	AdminConf AdminConfig // monitor config
 	LogConf   LogConfig   // log config
+	DBConf    DBConfig    // db config
 }
 
 // for debug print
@@ -68,15 +70,23 @@ type LogConfig struct {
 	Outputs     map[string]string // Store Adaptor : config
 }
 
+type DBConfig struct {
+	User string
+	PW   string
+	Addr string
+	Port int
+	DB   string
+}
+
 var (
 	// SConfig is the default config for Application
 	SConfig *Config
 
 	// AppConfig is the instance of Config, store the config information from file
-	AppConfig *serverConfig
+	appConfig *serverConfig
 
 	// AppPath is the absolute path to the app
-	AppPath string
+	appPath string
 
 	// appConfigPath is the path to the config files
 	appConfigPath string
@@ -86,8 +96,8 @@ var (
 )
 
 func init() {
-	AppPath, _ = filepath.Abs(filepath.Dir(os.Args[0]))
-	os.Chdir(AppPath)
+	appPath, _ = filepath.Abs(filepath.Dir(os.Args[0]))
+	os.Chdir(appPath)
 
 	SConfig = &Config{
 		AppName:             "server",
@@ -97,7 +107,8 @@ func init() {
 		RecoverPanic:        true,
 		MaxMemory:           1 << 26, //64MB
 		EnableErrorsShow:    true,
-		TCPAddr:             "127.0.0.1:60060",
+		TCPAddr:             "127.0.0.1",
+		TCPPort:             60060,
 		MsgSize:             10000,
 		AdminConf: AdminConfig{
 			ServerTimeOut: 0,
@@ -114,11 +125,18 @@ func init() {
 			FileLineNum: true,
 			Outputs:     map[string]string{"console": ""},
 		},
+		DBConf: DBConfig{
+			User: "user",
+			PW:   "pw",
+			Addr: "localhost",
+			Port: 3306,
+			DB:   "testDb",
+		},
 	}
 
-	appConfigPath = filepath.Join(AppPath, "conf", "app.conf")
+	appConfigPath = filepath.Join(appPath, "conf", "app.conf")
 	if !utils.FileExists(appConfigPath) {
-		AppConfig = &serverConfig{innerConfig: config.NewFakeConfig()}
+		appConfig = &serverConfig{innerConfig: config.NewFakeConfig()}
 		return
 	}
 
@@ -129,39 +147,46 @@ func init() {
 
 // now only support ini, next will support json.
 func parseConfig(appConfigPath string) (err error) {
-	AppConfig, err = newAppConfig(appConfigProvider, appConfigPath)
+	appConfig, err = newAppConfig(appConfigProvider, appConfigPath)
 	if err != nil {
 		return err
 	}
 	// set the run mode first
 	if envRunMode := os.Getenv("SERVER_RUNMODE"); envRunMode != "" {
 		SConfig.RunMode = envRunMode
-	} else if runMode := AppConfig.String("RunMode"); runMode != "" {
+	} else if runMode := appConfig.String("RunMode"); runMode != "" {
 		SConfig.RunMode = runMode
 	}
 
-	SConfig.AppName = AppConfig.DefaultString("AppName", SConfig.AppName)
-	SConfig.RecoverPanic = AppConfig.DefaultBool("RecoverPanic", SConfig.RecoverPanic)
-	SConfig.RouterCaseSensitive = AppConfig.DefaultBool("RouterCaseSensitive", SConfig.RouterCaseSensitive)
-	SConfig.ServerName = AppConfig.DefaultString("ServerName", SConfig.ServerName)
-	SConfig.MaxMemory = AppConfig.DefaultInt64("MaxMemory", SConfig.MaxMemory)
-	SConfig.EnableErrorsShow = AppConfig.DefaultBool("EnableErrorsShow", SConfig.EnableErrorsShow)
-	SConfig.TCPAddr = AppConfig.DefaultString("TCPAddr", SConfig.TCPAddr)
-	SConfig.MsgSize = AppConfig.DefaultInt("MsgSize", SConfig.MsgSize)
+	SConfig.AppName = appConfig.DefaultString("AppName", SConfig.AppName)
+	SConfig.RecoverPanic = appConfig.DefaultBool("RecoverPanic", SConfig.RecoverPanic)
+	SConfig.RouterCaseSensitive = appConfig.DefaultBool("RouterCaseSensitive", SConfig.RouterCaseSensitive)
+	SConfig.ServerName = appConfig.DefaultString("ServerName", SConfig.ServerName)
+	SConfig.MaxMemory = appConfig.DefaultInt64("MaxMemory", SConfig.MaxMemory)
+	SConfig.EnableErrorsShow = appConfig.DefaultBool("EnableErrorsShow", SConfig.EnableErrorsShow)
+	SConfig.TCPAddr = appConfig.DefaultString("TCPAddr", SConfig.TCPAddr)
+	SConfig.TCPPort = appConfig.DefaultInt("TCPPort", SConfig.TCPPort)
+	SConfig.MsgSize = appConfig.DefaultInt("MsgSize", SConfig.MsgSize)
 
-	SConfig.AdminConf.HTTPAddr = AppConfig.String("HTTPAddr")
-	SConfig.AdminConf.HTTPPort = AppConfig.DefaultInt("HTTPPort", SConfig.AdminConf.HTTPPort)
-	SConfig.AdminConf.ListenTCP4 = AppConfig.DefaultBool("ListenTCP4", SConfig.AdminConf.ListenTCP4)
-	SConfig.AdminConf.EnableHTTP = AppConfig.DefaultBool("EnableHTTP", SConfig.AdminConf.EnableHTTP)
-	SConfig.AdminConf.EnableAdmin = AppConfig.DefaultBool("EnableAdmin", SConfig.AdminConf.EnableAdmin)
-	SConfig.AdminConf.AdminAddr = AppConfig.DefaultString("AdminAddr", SConfig.AdminConf.AdminAddr)
-	SConfig.AdminConf.AdminPort = AppConfig.DefaultInt("AdminPort", SConfig.AdminConf.AdminPort)
-	SConfig.AdminConf.ServerTimeOut = AppConfig.DefaultInt64("ServerTimeOut", SConfig.AdminConf.ServerTimeOut)
+	SConfig.AdminConf.HTTPAddr = appConfig.String("HTTPAddr")
+	SConfig.AdminConf.HTTPPort = appConfig.DefaultInt("HTTPPort", SConfig.AdminConf.HTTPPort)
+	SConfig.AdminConf.ListenTCP4 = appConfig.DefaultBool("ListenTCP4", SConfig.AdminConf.ListenTCP4)
+	SConfig.AdminConf.EnableHTTP = appConfig.DefaultBool("EnableHTTP", SConfig.AdminConf.EnableHTTP)
+	SConfig.AdminConf.EnableAdmin = appConfig.DefaultBool("EnableAdmin", SConfig.AdminConf.EnableAdmin)
+	SConfig.AdminConf.AdminAddr = appConfig.DefaultString("AdminAddr", SConfig.AdminConf.AdminAddr)
+	SConfig.AdminConf.AdminPort = appConfig.DefaultInt("AdminPort", SConfig.AdminConf.AdminPort)
+	SConfig.AdminConf.ServerTimeOut = appConfig.DefaultInt64("ServerTimeOut", SConfig.AdminConf.ServerTimeOut)
 
-	SConfig.LogConf.AccessLogs = AppConfig.DefaultBool("LogAccessLogs", SConfig.LogConf.AccessLogs)
-	SConfig.LogConf.FileLineNum = AppConfig.DefaultBool("LogFileLineNum", SConfig.LogConf.FileLineNum)
+	SConfig.LogConf.AccessLogs = appConfig.DefaultBool("LogAccessLogs", SConfig.LogConf.AccessLogs)
+	SConfig.LogConf.FileLineNum = appConfig.DefaultBool("LogFileLineNum", SConfig.LogConf.FileLineNum)
 
-	if lo := AppConfig.String("LogOutputs"); lo != "" {
+	SConfig.DBConf.User = appConfig.DefaultString("DBUser", SConfig.DBConf.User)
+	SConfig.DBConf.PW = appConfig.DefaultString("DBPW", SConfig.DBConf.PW)
+	SConfig.DBConf.Addr = appConfig.DefaultString("DBAddr", SConfig.DBConf.Addr)
+	SConfig.DBConf.Port = appConfig.DefaultInt("DBPort", SConfig.DBConf.Port)
+	SConfig.DBConf.DB = appConfig.DefaultString("DBName", SConfig.DBConf.DB)
+
+	if lo := appConfig.String("LogOutputs"); lo != "" {
 		los := strings.Split(lo, ";")
 		for _, v := range los {
 			if logType2Config := strings.SplitN(v, ",", 2); len(logType2Config) == 2 {

@@ -1,14 +1,13 @@
 package core
 
 import (
+	"fmt"
 	"net"
 	"os"
 	"runtime"
 	"sync"
 	"time"
 
-	"serverFramework/moduledb"
-	"serverFramework/modulelogic"
 	"serverFramework/utils"
 )
 
@@ -34,8 +33,6 @@ type ServerCore struct {
 	startTime        time.Time // server start time
 	tcpListener      net.Listener
 	wg               utils.WaitGroupWrapper
-	db               chan *moduledb.DBModuler       // the db chan
-	logic            chan *modulelogic.LogicModuler // the logic chan
 }
 
 func init() {
@@ -51,9 +48,14 @@ func New() *ServerCore {
 }
 
 func (sc *ServerCore) Run() {
-	tcpListener, err := net.Listen("tcp", SConfig.TCPAddr)
+	addr := SConfig.TCPAddr
+	if SConfig.TCPPort != 0 {
+		addr = fmt.Sprintf("%s:%d", SConfig.TCPAddr, SConfig.TCPPort)
+	}
+
+	tcpListener, err := net.Listen("tcp", addr)
 	if err != nil {
-		ServerLogger.Error("listen [%s] failed ->%s", SConfig.TCPAddr, err)
+		ServerLogger.Error("listen [%s:%s] failed ->%s", SConfig.TCPAddr, SConfig.TCPPort, err)
 		os.Exit(0)
 	}
 
@@ -61,7 +63,7 @@ func (sc *ServerCore) Run() {
 	sc.tcpListener = tcpListener
 	sc.Unlock()
 
-	Info("server listen on", SConfig.TCPAddr)
+	Info("server listen on", addr)
 
 	handle := &AcceptorHandler{}
 	// start accept routine
@@ -69,7 +71,7 @@ func (sc *ServerCore) Run() {
 		HandleAccept(sc.tcpListener, handle)
 	})
 
-	// start process msg
+	// start process msg ??
 	sc.wg.Wrap(func() {
 
 	})
@@ -78,5 +80,5 @@ func (sc *ServerCore) Run() {
 }
 
 func (sc *ServerCore) Version(app string) {
-	ServerLogger.Info("%s v%s(built w/%s)", app, VERSION, runtime.Version())
+	ServerLogger.Info("%s BASED ON SF v%s(built w/%s)", app, VERSION, runtime.Version())
 }
