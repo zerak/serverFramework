@@ -21,8 +21,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"serverFramework/utils"
-
+	"github.com/TaXingTianJi/serverFramework/utils"
 	"github.com/astaxie/beego/config"
 )
 

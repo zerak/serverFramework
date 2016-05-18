@@ -3,8 +3,8 @@ package core
 import (
 	"strings"
 
-	. "serverFramework/client"
-	. "serverFramework/protocol"
+	. "github.com/TaXingTianJi/serverFramework/client"
+	. "github.com/TaXingTianJi/serverFramework/protocol"
 )
 
 type EventHandler interface {

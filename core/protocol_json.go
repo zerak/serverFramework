@@ -6,7 +6,7 @@ import (
 	"net"
 	"sync/atomic"
 
-	"serverFramework/protocol"
+	"github.com/TaXingTianJi/serverFramework/protocol"
 )
 
 type ProtocolJson struct {

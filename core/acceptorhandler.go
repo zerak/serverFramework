@@ -5,7 +5,7 @@ import (
 	"net"
 	"strings"
 
-	"serverFramework/protocol"
+	"github.com/TaXingTianJi/serverFramework/protocol"
 )
 
 type Handler interface {

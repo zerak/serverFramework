@@ -4,7 +4,7 @@ import (
 	"net"
 	"strings"
 
-	. "serverFramework/client"
+	. "github.com/TaXingTianJi/serverFramework/client"
 )
 
 // Protocol describes the basic behavior of any protocol in the system

@@ -9,8 +9,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	. "serverFramework/client"
-	"serverFramework/protocol"
+	. "github.com/TaXingTianJi/serverFramework/client"
+	"github.com/TaXingTianJi/serverFramework/protocol"
 )
 
 const (
