@@ -114,10 +114,10 @@ func init() {
 			ListenTCP4:    false,
 			EnableHTTP:    true,
 			HTTPAddr:      "",
-			HTTPPort:      8080,
+			HTTPPort:      60100,
 			EnableAdmin:   true,
 			AdminAddr:     "",
-			AdminPort:     8088,
+			AdminPort:     60200,
 		},
 		LogConf: LogConfig{
 			AccessLogs:  false,
